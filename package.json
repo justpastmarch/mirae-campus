@@ -3,23 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "engines": {
-    "node": ">=22.12.0"
-  },
+  "engines": { "node": ">=22.12.0" },
   "scripts": {
-    "dev": "node scripts/dev.mjs",
     "start": "node scripts/dev.mjs",
-    "build": "vite build",
-    "preview": "vite preview --host 127.0.0.1",
-    "test": "node --test src/*.test.js",
+    "dev": "node scripts/dev.mjs",
     "setup": "node scripts/dev.mjs --setup",
-    "dev:frontend": "vite --host 127.0.0.1"
-  },
-  "dependencies": {
-    "react": "19.3.0",
-    "react-dom": "19.3.0"
-  },
-  "devDependencies": {
-    "vite": "8.3.4"
+    "build": "npm --prefix frontend run build",
+    "test": "npm --prefix frontend test",
+    "preview": "node scripts/dev.mjs preview",
+    "dev:frontend": "npm --prefix frontend run dev"
   }
 }

@@ -53,6 +53,7 @@ npm start
 ## 검사와 빌드
 
 ```bash
+npm --prefix frontend ci
 npm test
 npm run build
 ```
@@ -77,16 +78,51 @@ backend/.venv/bin/python -m pip install -r backend/requirements-test.txt
 backend/.venv/bin/python -m unittest backend.test_api -v
 ```
 
-프런트엔드 빌드 결과는 `dist`에 생성됩니다. 빌드 결과를 백엔드와 함께 확인하려면 `npm start -- preview`를 실행합니다. 기본 주소는 `http://localhost:4173`입니다. 정적 파일만 외부 서버에 배포하는 경우에는 `/api`를 FastAPI 서버로 전달하는 설정이 필요합니다.
+프런트엔드 빌드 결과는 `frontend/dist`에 생성됩니다. 빌드 결과를 백엔드와 함께 확인하려면 `npm run preview`를 실행합니다. 기본 주소는 `http://localhost:4173`입니다. 정적 파일만 외부 서버에 배포하는 경우에는 `/api`를 FastAPI 서버로 전달하는 설정이 필요합니다.
+
+## 개별 실행
+
+프런트엔드:
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+백엔드:
+
+```bash
+cd backend
+python -m venv .venv
+```
+
+Windows에서는 `.venv/Scripts/python.exe`, macOS/Linux에서는 `.venv/bin/python`을 사용합니다.
+
+```powershell
+.venv/Scripts/python.exe -m pip install -r requirements.txt
+.venv/Scripts/python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000
+```
+
+각각 다른 터미널에서 실행합니다. 프런트엔드는 `/api` 요청을 백엔드의 8000 포트로 전달합니다.
 
 ## 구성
 
 ```text
-src/                 React 화면, API 호출, 체험 상태, 스프레이 작업실
-backend/main.py      FastAPI 서버
-backend/data/        압축한 Litton 대학 데이터
-scripts/dev.mjs     프런트엔드·백엔드 통합 실행
-vite.config.js      API 프록시
+frontend/
+  src/                 React 화면, API 호출, 체험 상태, 스프레이 작업실
+  public/              정적 에셋
+  index.html           HTML 진입점
+  vite.config.js       프런트엔드 빌드와 API 프록시
+  package.json         프런트엔드 의존성과 실행 명령
+  package-lock.json    프런트엔드 의존성 버전
+backend/
+  main.py              FastAPI 서버
+  data/                압축한 Litton 대학 데이터
+  requirements.txt     백엔드 의존성
+  test_api.py          API 테스트
+scripts/dev.mjs        통합 설치·실행
+package.json           루트 실행 명령
 ```
 
 [업데이트된 Figma 디자인](https://www.figma.com/design/UbRl3qJMjmuXwsUiyZ4RkK/?node-id=0-1)을 바탕으로 구성했습니다. 캐릭터와 작업실 배경은 SVG, 스프레이 효과는 Canvas로 구현되어 별도 이미지 서비스 없이 실행됩니다.

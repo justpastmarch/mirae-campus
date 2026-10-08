@@ -5,6 +5,7 @@ import path from "node:path";
 import net from "node:net";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
+const frontend = path.join(root, "frontend");
 const windows = process.platform === "win32";
 const python = path.join(
   root,
@@ -18,9 +19,9 @@ const setupOnly = process.argv.includes("--setup");
 const children = [];
 let stopping = false;
 
-function run(command, args) {
+function run(command, args, cwd = root) {
   const result = spawnSync(command, args, {
-    cwd: root,
+    cwd,
     stdio: "inherit",
     windowsHide: true,
   });
@@ -49,12 +50,12 @@ process.on("exit", () => {
 try {
   if (
     !setupOnly &&
-    !existsSync(path.join(root, "node_modules/vite/bin/vite.js"))
+    !existsSync(path.join(frontend, "node_modules/vite/bin/vite.js"))
   ) {
     if (!process.env.npm_execpath)
       throw new Error("프로젝트 폴더에서 npm start를 실행해주세요.");
     console.log("프런트엔드 패키지를 설치합니다.");
-    run(process.execPath, [process.env.npm_execpath, "ci"]);
+    run(process.execPath, [process.env.npm_execpath, "ci"], frontend);
   }
   if (!process.env.API_TARGET || setupOnly) {
     if (!existsSync(python)) {
@@ -137,8 +138,8 @@ try {
   }
   const vite = spawn(
     process.execPath,
-    ["node_modules/vite/bin/vite.js", ...process.argv.slice(2)],
-    { cwd: root, stdio: "inherit", windowsHide: true },
+    [path.join(frontend, "node_modules/vite/bin/vite.js"), ...process.argv.slice(2)],
+    { cwd: frontend, stdio: "inherit", windowsHide: true },
   );
   children.push(vite);
   vite.once("error", (error) => {
