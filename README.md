@@ -131,4 +131,13 @@ package.json           루트 실행 명령
 
 [업데이트된 Figma 디자인](https://www.figma.com/design/UbRl3qJMjmuXwsUiyZ4RkK/?node-id=0-1)을 바탕으로 구성했습니다. 캐릭터와 작업실 배경은 SVG, 스프레이 효과는 Canvas로 구현되어 별도 이미지 서비스 없이 실행됩니다.
 
-추천 분야·학과 카드와 스프레이의 그라디언트는 [Figma Make 버전 4](https://www.figma.com/make/nFew2Mg9bmQAUsjrwrNS7s/Implement-Design-with-UX-Focus)의 스타일 값을 사용합니다. 카드는 `#27D8CD`의 불투명도 0%에서 20%로 이어지고, 스프레이는 불투명도 70%·25%·0%를 위치 0%·55%·72%에 배치합니다.
+그라디언트는 [Figma Make 버전 4](https://www.figma.com/make/nFew2Mg9bmQAUsjrwrNS7s/Implement-Design-with-UX-Focus)의 전체 체험 흐름과 SVG 에셋을 확인해 적용했습니다.
+
+| 위치 | 원본 값 |
+| --- | --- |
+| 추천 분야·학과 소개 카드 | `#27D8CD`, 위쪽 불투명도 0% → 아래쪽 20% |
+| 학과 소개 팔레트 | 원본 `major-palette.svg`, `#27D8CD` → `#90DAD6`, 불투명도 48%, 블러 7.8 |
+| 체험 입학증·성적표·졸업증명서의 접힌 모서리 | 135도, `#27D8CD` 49% → `#EAFFFD` 51% |
+| 스프레이 분사 | 불투명도 70%·25%·0%, 위치 0%·55%·72% |
+
+시작·관심 선택·키워드·로딩·대학 목록·전공 홈·사포 과제·졸업 요약 화면에는 원본 CSS/SVG 그라디언트가 없습니다. 서류는 앱 내 체험 기록이며 공식 대학 증명서나 성적표가 아닙니다.

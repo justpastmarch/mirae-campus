@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Icon from "./Icon.jsx";
 import Mascot from "./Mascot.jsx";
 import Catalog from "./Catalog.jsx";
+import CampusDocument, { documentTitles } from "./CampusDocument.jsx";
 import GraduationStudio, { ArtworkPreview } from "./GraduationStudio.jsx";
 import {
   STORAGE_KEY,
@@ -760,6 +761,9 @@ export default function App() {
                 </div>
               )}
               <div className="callout mint department-hero">
+                {department.id === "design" || department.name === "산업디자인학과" ? (
+                  <img className="major-palette" src="/assets/major-palette.svg" alt="" />
+                ) : null}
                 <div className="hero-title">
                   <Icon name={department.icon} size={32} />
                   <div>
@@ -894,6 +898,9 @@ export default function App() {
               </div>
               <div className="bottom-action">
                 <Button onClick={() => go("lesson")}>첫 체험 시작하기</Button>
+                <button className="text-button" onClick={() => setModal({ type: "document", document: "admission" })}>
+                  체험 입학증 보기
+                </button>
                 <p className="footnote">
                   학년은 체험 단계예요. 내 속도에 맞춰 탐색해요.
                 </p>
@@ -1380,6 +1387,12 @@ export default function App() {
                     ? "저장된 리포트 확인하기"
                     : "체험 리포트 저장하기"}
                 </Button>
+                <Button secondary onClick={() => setModal({ type: "document", document: "transcript" })}>
+                  성적표 확인하기
+                </Button>
+                <button className="text-button" onClick={() => setModal({ type: "document", document: "diploma" })}>
+                  졸업증명서 보기
+                </button>
                 <p className="footnote">
                   저장한 리포트는 나의 진로·전공 계획에서 볼 수 있어요.
                 </p>
@@ -1507,7 +1520,9 @@ export default function App() {
           <Modal
             onClose={() => setModal(null)}
             title={
-              modal === "menu"
+              modal?.type === "document"
+                ? documentTitles[modal.document]
+                : modal === "menu"
                 ? "미래캠퍼스"
                 : modal === "notifications"
                   ? "나의 소식"
@@ -1524,6 +1539,14 @@ export default function App() {
                             : "저장한 체험 리포트"
             }
           >
+            {modal?.type === "document" && (
+              <CampusDocument
+                type={modal.document}
+                department={department}
+                completed={completed}
+                onNext={() => setModal({ type: "document", document: "diploma" })}
+              />
+            )}
             {modal === "artwork" && (
               <GraduationStudio
                 key={department.id}
