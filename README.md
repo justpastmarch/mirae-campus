@@ -4,7 +4,61 @@
 
 ## 바로 실행
 
-Node.js 22.12 이상과 Python 3.10 이상이 필요합니다.
+아래에서 사용하는 운영체제의 명령 블록을 **전체 복사해서 터미널에 붙여넣으세요.** Node.js 22.12 이상, npm, Python 3.10 이상과 가상환경 기능, Git을 확인하고, 부족한 프로그램을 설치한 다음 프로젝트 다운로드와 실행까지 진행합니다.
+
+설치 위치는 명령을 실행한 폴더 아래 `mirae-campus`입니다. 이미 내려받았다면 **그 폴더의 상위 폴더**에서 실행하세요. 같은 저장소이고 수정한 파일이 없으면 최신 코드로 업데이트합니다. 기존 파일을 삭제하거나 수정 내용을 덮어쓰지 않습니다.
+
+최초 실행에는 인터넷과 프로그램 설치 권한이 필요합니다. 설치 중 관리자 승인, 암호 또는 약관 확인 창이 나오면 직접 확인해주세요. 회사·학교에서 프로그램 설치를 막은 컴퓨터에서는 관리자에게 설치를 요청해야 합니다.
+
+### Windows 10/11 — PowerShell
+
+시작 메뉴에서 **PowerShell**을 열고 붙여넣으세요. `npm.ps1` 실행 정책 문제를 피하도록 실행 스크립트는 `npm.cmd`를 사용합니다.
+
+```powershell
+$ErrorActionPreference = 'Stop'
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$setupUrl = 'https://raw.githubusercontent.com/justpastmarch/mirae-campus/main/scripts/bootstrap.ps1'
+$setupCode = (Invoke-WebRequest -UseBasicParsing $setupUrl).Content
+& ([scriptblock]::Create($setupCode))
+```
+
+필요한 프로그램은 Windows 패키지 관리자 WinGet으로 설치합니다. WinGet이 없다는 메시지가 나오면 Microsoft의 [앱 설치 관리자](https://aka.ms/getwinget)를 설치·업데이트하고 PowerShell을 새로 열어 같은 명령을 실행하세요. 설치 후 PATH를 찾을 수 없다는 메시지도 새 PowerShell에서 재실행하면 됩니다.
+
+### macOS — 터미널
+
+```bash
+(
+  set -e
+  campus_setup=$(mktemp)
+  curl -fsSL https://raw.githubusercontent.com/justpastmarch/mirae-campus/main/scripts/bootstrap.sh -o "$campus_setup"
+  bash "$campus_setup"
+)
+```
+
+부족한 프로그램은 Homebrew로 설치합니다. Homebrew가 없으면 공식 설치 프로그램을 실행합니다. Apple Silicon과 Intel 경로를 구분하며, macOS 개발 도구 설치가 필요한 경우 화면 안내를 따라주세요.
+
+### Ubuntu 22.04 이상 / Debian 12 이상 — 터미널
+
+```bash
+(
+  set -e
+  if ! command -v curl >/dev/null; then
+    sudo apt-get update
+    sudo apt-get install -y curl ca-certificates
+  fi
+  campus_setup=$(mktemp)
+  curl -fsSL https://raw.githubusercontent.com/justpastmarch/mirae-campus/main/scripts/bootstrap.sh -o "$campus_setup"
+  bash "$campus_setup"
+)
+```
+
+Git·Python·가상환경 기능은 apt로, Node.js가 없거나 버전이 낮으면 NodeSource의 Node.js 22 저장소를 통해 설치합니다. 다른 Linux 배포판은 자동 설치 대상이 아닙니다.
+
+Windows에서는 설치 여부 확인과 새 프로젝트의 자동 패키지 설치·실행을 검증했습니다. macOS/Linux 스크립트는 구문 검사만 완료했으며 해당 운영체제에서 설치 실행은 검증하지 않았습니다.
+
+설치 방식: [Microsoft WinGet](https://learn.microsoft.com/en-us/windows/package-manager/winget/install), [Homebrew](https://docs.brew.sh/Installation), [NodeSource](https://github.com/nodesource/distributions).
+
+### 필수 프로그램이 이미 설치된 경우
 
 ```bash
 git clone https://github.com/justpastmarch/mirae-campus.git
@@ -13,6 +67,8 @@ npm start
 ```
 
 기본 주소는 `http://localhost:5173`입니다. 포트가 사용 중이면 터미널에 표시되는 주소를 확인하세요. ZIP을 받았다면 압축을 푼 폴더에서 `npm start`를 실행하면 됩니다.
+
+Windows PowerShell에서 `npm.ps1을 실행할 수 없다`는 오류가 나면 `npm.cmd start`를 사용하세요. 재시작은 실행 중인 터미널에서 `Ctrl+C` 후 같은 폴더에서 다시 실행하면 됩니다. 터미널을 새로 열어 명령을 찾지 못한다면 위 운영체제별 블록을 상위 폴더에서 다시 실행하세요.
 
 `npm start`는 처음 실행할 때 프런트엔드 패키지, Python 가상환경, 백엔드 패키지를 설치한 뒤 프런트엔드와 백엔드를 함께 시작합니다. 초기 설치에는 인터넷 연결이 필요합니다. 이후에는 포함된 대학 데이터로 동작합니다. 종료하려면 터미널에서 Ctrl+C를 누르세요.
 
