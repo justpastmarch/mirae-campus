@@ -126,3 +126,5 @@ package.json           루트 실행 명령
 ```
 
 [업데이트된 Figma 디자인](https://www.figma.com/design/UbRl3qJMjmuXwsUiyZ4RkK/?node-id=0-1)을 바탕으로 구성했습니다. 캐릭터와 작업실 배경은 SVG, 스프레이 효과는 Canvas로 구현되어 별도 이미지 서비스 없이 실행됩니다.
+
+추천 분야·학과 카드와 스프레이의 그라디언트는 [Figma Make 버전 4](https://www.figma.com/make/nFew2Mg9bmQAUsjrwrNS7s/Implement-Design-with-UX-Focus)의 스타일 값을 사용합니다. 카드는 `#27D8CD`의 불투명도 0%에서 20%로 이어지고, 스프레이는 불투명도 70%·25%·0%를 위치 0%·55%·72%에 배치합니다.

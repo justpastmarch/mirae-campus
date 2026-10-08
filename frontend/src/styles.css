@@ -13,6 +13,12 @@
   font-weight: 400;
   --mint: #e7f9f6;
   --teal: #21cbbb;
+  --figma-mint: #27d8cd;
+  --card-gradient: linear-gradient(
+    180deg,
+    rgba(39, 216, 205, 0) 0%,
+    rgba(39, 216, 205, 0.2) 100%
+  );
   --dark-teal: #287c77;
   --cream: #fff9e7;
   --gray: #f5f5f3;
@@ -554,6 +560,12 @@ button strong {
 .result-card p {
   color: #4a584c;
 }
+.result-card,
+.department-hero,
+.department-card.mint {
+  background: var(--card-gradient);
+  border: 1px solid var(--figma-mint);
+}
 .compact-cards {
   display: flex;
   flex-direction: column;
@@ -636,10 +648,10 @@ button strong {
   border-color: #a3dcd2;
 }
 .department-card.mint {
-  border-color: var(--mint);
+  border-color: var(--figma-mint);
 }
 .department-card.mint:hover {
-  border-color: #a3dcd2;
+  border-color: var(--figma-mint);
 }
 .department-icon {
   height: 39px;

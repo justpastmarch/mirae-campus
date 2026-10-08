@@ -4,7 +4,7 @@ import Icon from "./Icon.jsx";
 const W = 640,
   H = 660;
 const colors = [
-  ["민트", "#1bcbbb"],
+  ["민트", "#27d8cd"],
   ["라벤더", "#9584df"],
   ["코랄", "#fa8070"],
   ["노랑", "#f3c94f"],

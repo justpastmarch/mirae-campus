@@ -99,14 +99,19 @@
   width: 72px;
   height: 54px;
   border-radius: 50%;
-  background: radial-gradient(ellipse, var(--spray-color), transparent 65%);
+  background: radial-gradient(
+    at 0% center,
+    color-mix(in srgb, var(--spray-color) 70%, transparent) 0%,
+    color-mix(in srgb, var(--spray-color) 25%, transparent) 55%,
+    transparent 72%
+  );
   opacity: 0;
   filter: blur(4px);
   transform: rotate(-20deg);
   transition: opacity 0.15s;
 }
 .spraying .spray-cloud {
-  opacity: 0.7;
+  opacity: 1;
   animation: spray-mist 0.18s infinite alternate;
 }
 .studio-caption {
