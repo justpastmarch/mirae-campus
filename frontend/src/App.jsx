@@ -144,16 +144,11 @@ export default function App() {
   const [state, setState] = useState(() => loadState(window.localStorage));
   const departments = [...baseDepartments, ...state.catalog];
   const [pendingTransfer, setPendingTransfer] = useState(null);
-  const defaultRoute = state.onboarded
-    ? Object.keys(state.journeys).length
-      ? "home"
-      : "explore"
-    : "welcome";
   const readRoute = () =>
     routes.includes(location.hash.slice(1))
       ? location.hash.slice(1)
-      : defaultRoute;
-  const [route, setRoute] = useState(readRoute);
+      : "welcome";
+  const [route, setRoute] = useState("welcome");
   const [interestAnswer, setInterestAnswer] = useState("yes");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("전체");
@@ -185,8 +180,25 @@ export default function App() {
     setModal(null);
   };
   const notify = (message) => setToast(message);
+  const hasSavedProgress =
+    state.onboarded ||
+    Object.keys(state.journeys).length > 0 ||
+    state.interests.length > 0 ||
+    state.activities.length > 0;
+
+  function startFresh(next = "interest") {
+    setState(structuredClone(initialState));
+    setDraft("");
+    setQuery("");
+    setFilter("전체");
+    setDetailTab("배우는 내용");
+    setInterestAnswer("yes");
+    setPendingTransfer(null);
+    go(next);
+  }
 
   useEffect(() => {
+    history.replaceState(null, "", `${location.pathname}${location.search}#welcome`);
     const handler = () => {
       setRoute(readRoute());
       setModal(null);
@@ -433,22 +445,26 @@ export default function App() {
                 <i />
               </div>
               <div className="bottom-action">
-                <Button onClick={() => go("interest")}>
-                  내 전공 찾으러 가기
+                <Button onClick={() => startFresh()}>
+                  {hasSavedProgress ? "처음부터 시작하기" : "내 전공 찾으러 가기"}
                 </Button>
                 <p className="footnote">
-                  정답은 없어요. 나만의 속도로 시작해요.
+                  {hasSavedProgress
+                    ? "처음부터 시작하면 이 브라우저의 이전 기록이 초기화돼요."
+                    : "정답은 없어요. 나만의 속도로 시작해요."}
                 </p>
-                {state.onboarded && (
+                {hasSavedProgress && (
                   <button
                     className="text-button"
                     onClick={() =>
                       go(
-                        Object.keys(state.journeys).length ? "home" : "explore",
+                        Object.keys(state.journeys).length
+                          ? "home"
+                          : state.onboarded ? "explore" : "interest",
                       )
                     }
                   >
-                    이어서 둘러보기 <Icon name="next" size={14} />
+                    이전 기록 이어서 하기 <Icon name="next" size={14} />
                   </button>
                 )}
               </div>
@@ -1553,11 +1569,7 @@ export default function App() {
                 <Button
                   className="danger"
                   onClick={() => {
-                    setState(structuredClone(initialState));
-                    setDraft("");
-                    setQuery("");
-                    setFilter("전체");
-                    go("welcome");
+                    startFresh("welcome");
                     notify("새로운 탐색을 시작할 준비가 됐어요.");
                   }}
                 >
