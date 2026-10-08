@@ -725,7 +725,7 @@ export default function App() {
                 )}
               </label>
               <div className="chips filters">
-                {["전체", "디자인", "사람·사회", "기술·자연"].map((item) => (
+                {["전체", "디자인", "심리", "사회"].map((item) => (
                   <button
                     className={`chip ${filter === item ? "active" : ""}`}
                     aria-pressed={filter === item}
