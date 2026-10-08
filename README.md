@@ -24,6 +24,8 @@ $setupCode = (Invoke-WebRequest -UseBasicParsing $setupUrl).Content
 
 필요한 프로그램은 Windows 패키지 관리자 WinGet으로 설치합니다. WinGet이 없다는 메시지가 나오면 Microsoft의 [앱 설치 관리자](https://aka.ms/getwinget)를 설치·업데이트하고 PowerShell을 새로 열어 같은 명령을 실행하세요. 설치 후 PATH를 찾을 수 없다는 메시지도 새 PowerShell에서 재실행하면 됩니다.
 
+이전 설치 명령에서 `NativeCommandError` 또는 `Python was not found`로 멈췄다면 위 명령 블록을 다시 실행하세요. 최신 스크립트는 `python3`가 실행되지 않아도 `python`, `py`를 이어서 확인합니다. Python 확인 실패와 실제 설치 실패를 구분하며, 프로그램이 실패 코드로 종료하면 해당 오류를 표시하고 중단합니다.
+
 ### macOS — 터미널
 
 ```bash
