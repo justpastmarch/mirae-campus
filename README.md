@@ -12,7 +12,9 @@
 
 ### Windows 10/11 — PowerShell
 
-시작 메뉴에서 **PowerShell**을 열고 붙여넣으세요. `npm.ps1` 실행 정책 문제를 피하도록 실행 스크립트는 `npm.cmd`를 사용합니다.
+시작 메뉴에서 **새 PowerShell 창**을 열고 아래 블록 전체를 붙여넣으세요. Windows 기본 PowerShell 5.1에서도 실행할 수 있습니다. `npm.ps1` 실행 정책 문제를 피하도록 실행 스크립트는 `npm.cmd`를 사용합니다.
+
+이미 다운로드했다면 `mirae-campus` 폴더 안이 아닌 **상위 폴더**에서 실행하세요. 예를 들어 `C:\Projects\mirae-campus`에 있다면 먼저 `cd C:\Projects`를 실행합니다.
 
 ```powershell
 $ErrorActionPreference = 'Stop'
@@ -24,7 +26,32 @@ $setupCode = (Invoke-WebRequest -UseBasicParsing $setupUrl).Content
 
 필요한 프로그램은 Windows 패키지 관리자 WinGet으로 설치합니다. WinGet이 없다는 메시지가 나오면 Microsoft의 [앱 설치 관리자](https://aka.ms/getwinget)를 설치·업데이트하고 PowerShell을 새로 열어 같은 명령을 실행하세요. 설치 후 PATH를 찾을 수 없다는 메시지도 새 PowerShell에서 재실행하면 됩니다.
 
-이전 설치 명령에서 `NativeCommandError` 또는 `Python was not found`로 멈췄다면 위 명령 블록을 다시 실행하세요. 최신 스크립트는 `python3`가 실행되지 않아도 `python`, `py`를 이어서 확인합니다. Python 확인 실패와 실제 설치 실패를 구분하며, 프로그램이 실패 코드로 종료하면 해당 오류를 표시하고 중단합니다.
+#### Windows에서 오류가 났을 때
+
+| 오류 또는 상황 | 실행 방법 |
+| --- | --- |
+| Python 확인 중 `NativeCommandError`, `Python was not found` | 새 PowerShell 창에서 위 블록을 다시 실행합니다. 매번 수정된 최신 설치 스크립트를 내려받습니다. |
+| `npm.ps1` 실행 정책 오류 | 프로젝트 폴더에서 `npm.cmd start`를 실행합니다. 실행 정책을 바꿀 필요가 없습니다. |
+| `winget`을 찾을 수 없음 | 위 링크의 Microsoft 앱 설치 관리자를 설치·업데이트하고 새 PowerShell에서 재실행합니다. |
+| 설치 후 Node/Python을 찾을 수 없음 | PowerShell을 닫았다가 새로 열고 위 블록을 다시 실행합니다. |
+| `Local changes exist` | 수정한 파일이 있어서 자동 업데이트를 중단한 상태입니다. 변경 사항을 커밋하거나 별도 폴더에서 실행하세요. |
+| `8000 포트가 사용 중` | 기존 서버를 `Ctrl+C`로 종료하거나 아래 포트 변경 명령을 사용합니다. |
+
+Python 확인은 `python3` → `python` → `py` 순서로 진행합니다. 한 명령이 실행되지 않아도 다음 명령을 확인하며, 설치 프로그램이 실제 실패 코드로 종료하면 오류를 표시하고 중단합니다.
+
+프로젝트 폴더에서 최신 코드를 받고 재시작할 때:
+
+```powershell
+git pull --ff-only
+if ($LASTEXITCODE -eq 0) { npm.cmd start }
+```
+
+8000 포트가 다른 프로그램에 사용 중일 때:
+
+```powershell
+$env:API_PORT = '8001'
+npm.cmd start
+```
 
 ### macOS — 터미널
 
