@@ -7,11 +7,13 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
-    "start": "vite --host 127.0.0.1",
+    "dev": "node scripts/dev.mjs",
+    "start": "node scripts/dev.mjs",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "node --test src/model.test.js"
+    "test": "node --test src/*.test.js",
+    "setup": "node scripts/dev.mjs --setup",
+    "dev:frontend": "vite --host 127.0.0.1"
   },
   "dependencies": {
     "react": "19.3.0",

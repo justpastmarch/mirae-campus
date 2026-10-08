@@ -1,9 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import Icon from "./Icon.jsx";
 import Mascot from "./Mascot.jsx";
+import Catalog from "./Catalog.jsx";
+import GraduationStudio, { ArtworkPreview } from "./GraduationStudio.jsx";
 import {
   STORAGE_KEY,
-  departments,
+  departments as baseDepartments,
+  LESSON_COUNT,
+  lessonYear,
+  createDepartment,
   initialState,
   loadState,
   recommend,
@@ -127,7 +132,7 @@ function DepartmentCard({ department, onClick, featured }) {
         <strong>{department.name}</strong>
         <small>{department.description}</small>
         <span className="card-tags">
-          {department.tags.join(" · ")} · 4단계 체험
+          {department.tags.join(" · ")} · 3단계 체험
         </span>
       </span>
       <Icon name="next" size={16} />
@@ -137,6 +142,8 @@ function DepartmentCard({ department, onClick, featured }) {
 
 export default function App() {
   const [state, setState] = useState(() => loadState(window.localStorage));
+  const departments = [...baseDepartments, ...state.catalog];
+  const [pendingTransfer, setPendingTransfer] = useState(null);
   const defaultRoute = state.onboarded
     ? Object.keys(state.journeys).length
       ? "home"
@@ -160,8 +167,8 @@ export default function App() {
     departments.find((d) => d.id === state.current) || departments[0];
   const journey = state.journeys[department.id];
   const completed = journey?.completed || 0;
-  const lessonIndex = Math.min(completed, 7);
-  const year = Math.min(4, Math.floor(completed / 2) + 1);
+  const lessonIndex = Math.min(completed, LESSON_COUNT - 1);
+  const year = lessonYear(completed);
   const recommendations = recommend(state.interests, state.activities);
   const best = recommendations[0];
   const bottomNav = ["home", "explore", "journeys", "plan"].includes(route);
@@ -216,13 +223,33 @@ export default function App() {
   useEffect(() => {
     if (["enrolled", "lesson", "manage", "report"].includes(route) && !journey)
       go("detail");
-    else if (route === "report" && completed < 8) go("home");
-    else if (route === "lesson" && (journey?.paused || completed >= 8))
-      go(completed >= 8 ? "report" : "journeys");
+    else if (route === "report" && completed < LESSON_COUNT) go("home");
+    else if (
+      route === "lesson" &&
+      (journey?.paused || completed >= LESSON_COUNT)
+    )
+      go(completed >= LESSON_COUNT ? "report" : "journeys");
   }, [route, journey, completed]);
 
   function openDepartment(id) {
+    const target = departments.find((d) => d.id === id);
+    if (!target.school) {
+      setFilter("전체");
+      setQuery(target.name);
+      go("explore");
+      return;
+    }
     setState((s) => ({ ...s, current: id }));
+    setDetailTab("배우는 내용");
+    go("detail");
+  }
+  function chooseCourse(course, school, curriculum) {
+    const next = createDepartment(course, school, curriculum);
+    setState((s) => ({
+      ...s,
+      current: next.id,
+      catalog: [...s.catalog.filter((d) => d.id !== next.id), next],
+    }));
     setDetailTab("배우는 내용");
     go("detail");
   }
@@ -234,22 +261,43 @@ export default function App() {
       current: id,
       journeys: {
         ...s.journeys,
+        ...(pendingTransfer &&
+        s.journeys[pendingTransfer] &&
+        pendingTransfer !== id
+          ? {
+              [pendingTransfer]: {
+                ...s.journeys[pendingTransfer],
+                paused: true,
+              },
+            }
+          : {}),
         [id]: existing
           ? { ...existing, paused: false }
           : { completed: 0, paused: false },
       },
     }));
-    go(existing ? (existing.completed === 8 ? "report" : "home") : "enrolled");
+    setPendingTransfer(null);
+    go(
+      existing
+        ? existing.completed === LESSON_COUNT
+          ? "report"
+          : "home"
+        : "enrolled",
+    );
   }
   function finishLesson() {
+    if (lessonIndex === LESSON_COUNT - 1 && !state.artworks[department.id]) {
+      notify("졸업작품에 스프레이로 색을 입혀주세요.");
+      return;
+    }
     if (!draft.trim()) {
       notify("오늘 발견한 점을 한 줄 이상 적어주세요.");
       return;
     }
     setState((s) => completeLesson(s, department.id, lessonIndex, draft));
-    go(completed === 7 ? "report" : "home");
+    go(completed === LESSON_COUNT - 1 ? "report" : "home");
     notify(
-      completed === 7
+      completed === LESSON_COUNT - 1
         ? "모든 체험을 마쳤어요. 축하해요!"
         : "실습 기록을 저장했어요. 한 걸음 더 나아갔네요!",
     );
@@ -266,7 +314,7 @@ export default function App() {
   }
   function downloadReport(id) {
     const d = departments.find((item) => item.id === id);
-    const text = `${d.name} 체험 리포트\n\n8 / 8 실습 완료\n\n${d.lessons.map((lesson, i) => `${i + 1}. ${lesson}\n${state.notes[`${id}-${i}`] || "기록 없음"}`).join("\n\n")}`;
+    const text = `${d.name} 체험 리포트\n\n3 / 3 실습 완료\n\n${d.lessons.map((lesson, i) => `${i + 1}. ${lesson}\n${state.notes[`${id}-${i}`] || "기록 없음"}`).join("\n\n")}`;
     const url = URL.createObjectURL(
       new Blob(["\uFEFF", text], { type: "text/plain;charset=utf-8" }),
     );
@@ -335,7 +383,9 @@ export default function App() {
           )}
           <span>
             {route === "lesson"
-              ? `${year}학년 · ${department.lessons[lessonIndex]}`
+              ? lessonIndex === 2
+                ? "4학년 · 졸업작품"
+                : `${year}학년 · ${department.lessons[lessonIndex]}`
               : titles[route] || "미래캠퍼스"}
           </span>
           <button
@@ -648,7 +698,7 @@ export default function App() {
                 <Icon name="search" size={19} />
                 <input
                   aria-label="학과 검색"
-                  placeholder="학과나 배우고 싶은 내용 검색"
+                  placeholder="궁금한 학과 이름 검색"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                 />
@@ -672,46 +722,7 @@ export default function App() {
                 ))}
               </div>
               <h2 className="section-title">관심 키워드와 연결된 학과</h2>
-              <div className="department-list">
-                {recommendations
-                  .filter(
-                    (d) =>
-                      (filter === "전체" || d.category === filter) &&
-                      `${d.name} ${d.description} ${d.keywords.join(" ")}`.includes(
-                        query.trim(),
-                      ),
-                  )
-                  .map((d, i) => (
-                    <DepartmentCard
-                      key={d.id}
-                      department={d}
-                      featured={i === 0}
-                      onClick={() => openDepartment(d.id)}
-                    />
-                  ))}
-                {!recommendations.some(
-                  (d) =>
-                    (filter === "전체" || d.category === filter) &&
-                    `${d.name} ${d.description} ${d.keywords.join(" ")}`.includes(
-                      query.trim(),
-                    ),
-                ) && (
-                  <div className="empty-state">
-                    <Icon name="search" size={30} />
-                    <h3>아직 찾는 학과가 없어요</h3>
-                    <p>다른 검색어나 분야로 찾아볼까요?</p>
-                    <button
-                      className="text-button"
-                      onClick={() => {
-                        setQuery("");
-                        setFilter("전체");
-                      }}
-                    >
-                      전체 학과 보기
-                    </button>
-                  </div>
-                )}
-              </div>
+              <Catalog filter={filter} query={query} onChoose={chooseCourse} />
               <button
                 className="text-button explore-again"
                 onClick={() => go("keywords")}
@@ -723,6 +734,15 @@ export default function App() {
 
           {route === "detail" && (
             <>
+              {department.school && (
+                <div className="school-banner">
+                  <Icon name="cap" size={25} />
+                  <div>
+                    <strong>{department.school}</strong>
+                    <small>학교별 교육과정을 만나보세요</small>
+                  </div>
+                </div>
+              )}
               <div className="callout mint department-hero">
                 <div className="hero-title">
                   <Icon name={department.icon} size={32} />
@@ -757,9 +777,9 @@ export default function App() {
                     <div className="curriculum">
                       {department.years.map((item, i) => (
                         <div key={item}>
-                          <span>{i + 1}학년</span>
+                          <span>{i + 1}단계</span>
                           <strong>{item}</strong>
-                          <small>{department.lessons[i * 2]}</small>
+                          <small>{department.lessons[i]}</small>
                         </div>
                       ))}
                     </div>
@@ -767,6 +787,18 @@ export default function App() {
                 )}
                 {detailTab === "교육과정" && (
                   <>
+                    {department.curriculum && (
+                      <details className="actual-curriculum">
+                        <summary>
+                          학교 교과목 {department.curriculum.length}개 보기
+                        </summary>
+                        <ul>
+                          {department.curriculum.map((subject, i) => (
+                            <li key={`${subject}-${i}`}>{subject}</li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
                     <h2 className="section-title">
                       작은 경험을 차곡차곡 쌓아요
                     </h2>
@@ -782,7 +814,7 @@ export default function App() {
                       ))}
                     </div>
                     <p className="footnote">
-                      진로 탐색을 위한 8개의 간단한 체험이에요.
+                      진로 탐색을 위한 3개의 간단한 체험이에요.
                     </p>
                   </>
                 )}
@@ -793,7 +825,7 @@ export default function App() {
                     </h2>
                     <p className="body-copy">
                       주변을 관찰하고 작은 과제를 해본 뒤, 발견한 점을 한 줄씩
-                      기록해요. 여덟 번의 체험이 끝나면 나의 전공 체험 리포트가
+                      기록해요. 세 번의 체험이 끝나면 나의 전공 체험 리포트가
                       완성돼요.
                     </p>
                     <div className="callout cream">
@@ -804,14 +836,14 @@ export default function App() {
                 )}
               </section>
               <div className="callout cream">
-                <strong>직접 해보기 · {department.lessons[3]}</strong>
+                <strong>직접 해보기 · {department.lessons[1]}</strong>
                 <p>궁금한 전공을 가벼운 과제 하나로 경험해봐요.</p>
               </div>
               <div className="bottom-action">
                 <Button onClick={() => enroll()}>
                   {department.name}{" "}
                   {journey
-                    ? completed === 8
+                    ? completed === LESSON_COUNT
                       ? "리포트 보기"
                       : journey.paused
                         ? "복학하기"
@@ -863,22 +895,27 @@ export default function App() {
               {journey ? (
                 <>
                   <div className="callout mint current-card">
+                    {department.school && (
+                      <span className="eyebrow">{department.school}</span>
+                    )}
                     <div className="current-card-top">
                       <div>
                         <h2>{department.name}</h2>
                         <p>
-                          {year}학년 · {department.years[year - 1]}
+                          {year}학년 · {department.years[lessonIndex]}
                           <br />
-                          학습·실습 {completed} / 8 완료
+                          학습·실습 {completed} / 3 완료
                         </p>
                       </div>
                       <Mascot variant="study" small />
                     </div>
-                    <Progress value={Math.round((completed / 8) * 100)} />
+                    <Progress
+                      value={Math.round((completed / LESSON_COUNT) * 100)}
+                    />
                     <Button
                       onClick={() =>
                         go(
-                          completed === 8
+                          completed === LESSON_COUNT
                             ? "report"
                             : journey.paused
                               ? "journeys"
@@ -886,7 +923,7 @@ export default function App() {
                         )
                       }
                     >
-                      {completed === 8
+                      {completed === LESSON_COUNT
                         ? "완성된 체험 리포트 보기"
                         : journey.paused
                           ? "쉬고 있는 체험 확인하기"
@@ -894,27 +931,31 @@ export default function App() {
                     </Button>
                   </div>
                   <h2 className="section-title">
-                    {completed === 8
+                    {completed === LESSON_COUNT
                       ? "다음 관심을 만나볼까요?"
                       : "오늘의 다음 실습"}
                   </h2>
                   <button
                     className="choice"
                     onClick={() =>
-                      completed === 8 ? go("explore") : setModal("curriculum")
+                      completed === LESSON_COUNT
+                        ? go("explore")
+                        : setModal("curriculum")
                     }
                   >
-                    <Icon name={completed === 8 ? "cap" : "chat"} />
+                    <Icon name={completed === LESSON_COUNT ? "cap" : "chat"} />
                     <span>
                       <strong>
-                        {completed === 8
+                        {completed === LESSON_COUNT
                           ? "새로운 학과 둘러보기"
-                          : department.lessons[Math.min(7, lessonIndex + 1)]}
+                          : department.lessons[
+                              Math.min(LESSON_COUNT - 1, lessonIndex + 1)
+                            ]}
                       </strong>
                       <small>
-                        {completed === 8
+                        {completed === LESSON_COUNT
                           ? "다른 전공에도 나다운 가능성이 있어요"
-                          : `${Math.min(4, Math.floor((lessonIndex + 1) / 2) + 1)}학년 실습 · 작은 경험을 이어가요`}
+                          : `${lessonYear(lessonIndex + 1)}학년 실습 · 작은 경험을 이어가요`}
                       </small>
                     </span>
                     <Icon name="next" size={15} />
@@ -942,70 +983,104 @@ export default function App() {
 
           {route === "lesson" && (
             <>
-              <div className="chips">
-                <Tag>
-                  배우기 완료 <Icon name="check" size={12} />
-                </Tag>
-                <Tag>
-                  직접 해보기 <Icon name="pen" size={12} />
-                </Tag>
+              <div className="learning-steps" aria-label="3단계 학습 과정">
+                {department.years.map((label, i) => (
+                  <span
+                    key={label}
+                    className={
+                      i === lessonIndex
+                        ? "active"
+                        : i < lessonIndex
+                          ? "done"
+                          : ""
+                    }
+                    aria-current={i === lessonIndex ? "step" : undefined}
+                  >
+                    {i < lessonIndex ? <Icon name="check" size={12} /> : i + 1}{" "}
+                    {label}
+                  </span>
+                ))}
               </div>
-              <Heading
-                subtitle={
-                  department.id === "design"
-                    ? "사용자의 행동을 보고, 사소한 맥락을 나눠봐요."
-                    : "일상에서 작은 질문을 찾고, 나의 생각을 기록해봐요."
-                }
-              >
-                {department.lessons[lessonIndex]}
-                <br />
-                {department.id === "design" && lessonIndex === 3
-                  ? "함께 찾아볼까요?"
-                  : "직접 경험해 볼까요?"}
-              </Heading>
-              <div className="callout mint">
-                <strong>배운 내용 · {department.tags[lessonIndex % 2]}</strong>
-                <p>
-                  {department.id === "design"
-                    ? "사용자가 어려워하고 불편해하는 지점, 어디서 멈추고 어떤 행동을 반복하는지 구체적인 장면을 기록해요."
-                    : department.id === "psychology"
-                      ? "마음과 행동에는 다양한 이유가 있어요. 판단하기 전에 상황과 감정을 있는 그대로 관찰해요."
-                      : department.id === "media"
-                        ? "전하고 싶은 이야기는 누구를 위한 것일까요? 대상과 핵심 메시지를 떠올리고 나만의 표현을 찾아요."
-                        : "큰 문제도 작은 단계로 나누면 해결의 실마리가 보여요. 입력과 과정, 원하는 결과를 구체적으로 정리해요."}
-                </p>
-              </div>
-              <h2 className="section-title">오늘의 직접 적용 과제</h2>
-              <ol className="task-list">
-                <li>
-                  주변에서 ‘{department.lessons[lessonIndex]}’와 연결되는 장면을
-                  찾아요.
-                </li>
-                <li>눈에 띄는 점과 궁금한 점을 구체적으로 적어요.</li>
-                <li>내가 해보고 싶은 변화나 새롭게 발견한 점을 생각해요.</li>
-              </ol>
+              {lessonIndex === LESSON_COUNT - 1 ? (
+                <GraduationStudio
+                  key={department.id}
+                  value={state.artworks[department.id] || ""}
+                  onChange={(image) =>
+                    setState((s) => ({
+                      ...s,
+                      artworks: { ...s.artworks, [department.id]: image },
+                    }))
+                  }
+                />
+              ) : (
+                <>
+                  <Heading
+                    subtitle={`${lessonYear(lessonIndex)}학년 · ${department.years[lessonIndex]} · 나의 생각을 경험으로 연결해요.`}
+                  >
+                    {department.lessons[lessonIndex]}
+                    <br />
+                    직접 경험해 볼까요?
+                  </Heading>
+                  <div className="callout mint">
+                    <strong>
+                      {lessonIndex === 0
+                        ? "첫 번째 경험 · 관찰하고 이해하기"
+                        : "두 번째 경험 · 아이디어 적용하기"}
+                    </strong>
+                    <p>
+                      {lessonIndex === 0
+                        ? `‘${department.lessons[lessonIndex]}’에서 다루는 주제와 관련된 일상 속 장면을 하나 찾아보세요. 무엇을 관찰했고 어떤 점이 궁금했나요?`
+                        : "첫 단계에서 발견한 질문을 작은 해결 방법으로 바꿔보세요. 대상과 목적을 정하고, 직접 해본 과정과 결과를 기록해요."}
+                    </p>
+                  </div>
+                  <h2 className="section-title">오늘의 직접 적용 과제</h2>
+                  <ol className="task-list">
+                    <li>주변에서 주제와 연결되는 장면을 찾아요.</li>
+                    <li>나의 아이디어를 간단한 스케치나 실험으로 표현해요.</li>
+                    <li>새롭게 발견한 점과 다음에 바꿔볼 점을 기록해요.</li>
+                  </ol>
+                </>
+              )}
               <label className="note-card">
                 <span>
-                  <strong>나의 관찰 노트</strong>
+                  <strong>
+                    {lessonIndex === 2
+                      ? "졸업작품에 담은 생각"
+                      : "나의 관찰 노트"}
+                  </strong>
                   <Icon name="pen" size={16} />
                 </span>
                 <textarea
                   aria-label="나의 관찰 노트"
-                  placeholder="어떤 장면을 발견했나요? 나의 생각을 자유롭게 적어주세요."
+                  placeholder={
+                    lessonIndex === 2
+                      ? "어떤 생각을 색으로 표현했나요? 작품의 의미를 적어주세요."
+                      : "어떤 장면을 발견했나요? 나의 생각을 자유롭게 적어주세요."
+                  }
                   value={draft}
                   maxLength={3000}
                   onChange={(e) => setDraft(e.target.value)}
                 />
                 <small>
-                  {draft.length} / 3,000자 · 기록은 완료 버튼을 누르면 저장돼요.
+                  {draft.length} / 3,000자 · 완료 버튼을 누르면 기록이 저장돼요.
                 </small>
               </label>
               <div className="bottom-action">
-                <Button disabled={!draft.trim()} onClick={finishLesson}>
-                  실습 기록 저장하고 완료하기
+                <Button
+                  disabled={
+                    !draft.trim() ||
+                    (lessonIndex === 2 && !state.artworks[department.id])
+                  }
+                  onClick={finishLesson}
+                >
+                  {lessonIndex === 2
+                    ? "졸업작품 제출하고 체험 마치기"
+                    : "실습 기록 저장하고 완료하기"}
                 </Button>
                 <p className="footnote">
-                  기록하면 {completed + 1} / 8 완료 · 다음 경험으로 이어져요.
+                  {lessonIndex === 2
+                    ? "작품에 색을 칠하고 생각을 남기면 졸업할 수 있어요."
+                    : `기록하면 ${completed + 1} / 3 완료 · 다음 경험으로 이어져요.`}
                 </p>
               </div>
             </>
@@ -1020,7 +1095,7 @@ export default function App() {
               </Heading>
               <Tag>
                 {department.name} · {year}학년 ·{" "}
-                {Math.round((completed / 8) * 100)}%{" "}
+                {Math.round((completed / LESSON_COUNT) * 100)}%{" "}
                 <Icon name="check" size={12} />
               </Tag>
               <div className="management-list">
@@ -1101,7 +1176,7 @@ export default function App() {
                   onClick={() =>
                     journey?.paused
                       ? enroll()
-                      : go(completed === 8 ? "report" : "lesson")
+                      : go(completed === LESSON_COUNT ? "report" : "lesson")
                   }
                 >
                   현재 학과 계속 체험하기
@@ -1129,7 +1204,7 @@ export default function App() {
                   진행{" "}
                   {
                     Object.values(state.journeys).filter(
-                      (j) => !j.paused && j.completed < 8,
+                      (j) => !j.paused && j.completed < LESSON_COUNT,
                     ).length
                   }{" "}
                   · 보관{" "}
@@ -1145,7 +1220,7 @@ export default function App() {
                       className={`callout ${item.paused ? "cream" : "mint"}`}
                     >
                       <span className="eyebrow">
-                        {item.completed === 8
+                        {item.completed === LESSON_COUNT
                           ? "모든 체험 완료"
                           : item.paused
                             ? "휴학 중 · 기록을 보관하고 있어요"
@@ -1155,12 +1230,14 @@ export default function App() {
                       </span>
                       <h2>{d.name}</h2>
                       <p>
-                        {Math.min(4, Math.floor(item.completed / 2) + 1)}학년 ·{" "}
-                        {d.lessons[Math.min(item.completed, 7)]} ·{" "}
-                        {item.completed} / 8 완료
+                        {lessonYear(item.completed)}학년 ·{" "}
+                        {d.lessons[Math.min(item.completed, LESSON_COUNT - 1)]}{" "}
+                        · {item.completed} / 3 완료
                       </p>
                       <Progress
-                        value={Math.round((item.completed / 8) * 100)}
+                        value={Math.round(
+                          (item.completed / LESSON_COUNT) * 100,
+                        )}
                         label="체험 진행도"
                       />
                       {item.paused && (
@@ -1180,10 +1257,14 @@ export default function App() {
                               [id]: { ...item, paused: false },
                             },
                           }));
-                          go(item.completed === 8 ? "report" : "lesson");
+                          go(
+                            item.completed === LESSON_COUNT
+                              ? "report"
+                              : "lesson",
+                          );
                         }}
                       >
-                        {item.completed === 8
+                        {item.completed === LESSON_COUNT
                           ? "체험 리포트 보기"
                           : item.paused
                             ? `${d.name} 복학하고 이어하기`
@@ -1230,13 +1311,16 @@ export default function App() {
                   체험 졸업을 축하해요!
                 </Heading>
               </div>
+              {department.school && (
+                <p className="graduation-school">{department.school}</p>
+              )}
               <div className="stats mint">
                 <div>
                   <strong>4학년</strong>
                   <span>체험 단계</span>
                 </div>
                 <div>
-                  <strong>8 / 8</strong>
+                  <strong>3 / 3</strong>
                   <span>학습·실습</span>
                 </div>
                 <div>
@@ -1250,12 +1334,23 @@ export default function App() {
                 <p>{department.years.join(" → ")}</p>
                 <span className="eyebrow">체험 기록</span>
                 <p>
-                  8개의 실습을 마치며 나의 생각을 기록했어요. 그중 마지막 발견을
+                  3개의 실습을 마치며 나의 생각을 기록했어요. 그중 마지막 발견을
                   다시 만나봐요.
                 </p>
+                {state.artworks[department.id] && (
+                  <>
+                    <ArtworkPreview src={state.artworks[department.id]} />
+                    <button
+                      className="text-button"
+                      onClick={() => setModal("artwork")}
+                    >
+                      졸업작품 열기 →
+                    </button>
+                  </>
+                )}
                 <blockquote>
-                  {state.notes[`${department.id}-7`] ||
-                    "여덟 번의 경험이 나만의 전공 이야기가 되었어요."}
+                  {state.notes[`${department.id}-2`] ||
+                    "세 번의 경험이 나만의 전공 이야기가 되었어요."}
                 </blockquote>
                 <span className="eyebrow">다음 가능성</span>
                 <p>
@@ -1323,7 +1418,7 @@ export default function App() {
                       <span>
                         <strong>{d.name} 체험 리포트</strong>
                         <small>
-                          4학년 · 8 / 8 완료 ·{" "}
+                          4학년 · 3 / 3 완료 ·{" "}
                           {new Date(r.date).toLocaleDateString("ko-KR")}
                         </small>
                       </span>
@@ -1408,9 +1503,23 @@ export default function App() {
                         ? "함께 탐색할 학과"
                         : modal === "reset"
                           ? "기록을 초기화할까요?"
-                          : "저장한 체험 리포트"
+                          : modal === "artwork"
+                            ? "졸업작품 작업실"
+                            : "저장한 체험 리포트"
             }
           >
+            {modal === "artwork" && (
+              <GraduationStudio
+                key={department.id}
+                value={state.artworks[department.id] || ""}
+                onChange={(image) =>
+                  setState((s) => ({
+                    ...s,
+                    artworks: { ...s.artworks, [department.id]: image },
+                  }))
+                }
+              />
+            )}
             {modal === "menu" && (
               <div className="modal-options">
                 <button onClick={() => go("explore")}>
@@ -1496,37 +1605,28 @@ export default function App() {
               <>
                 <p className="body-copy">
                   {modal === "transfer"
-                    ? "기존 체험은 쉬어가고, 선택한 전공에서 새로운 경험을 시작해요."
-                    : "현재 체험을 유지하면서 새로운 관심도 함께 탐색해요."}
+                    ? "새 대학·학과에 입학하면 기존 체험은 보관돼요."
+                    : "대학과 학과를 골라 현재 체험과 함께 탐색해요."}
                 </p>
-                <div className="department-list">
-                  {departments
-                    .filter((d) => d.id !== department.id || !journey)
-                    .map((d) => (
-                      <DepartmentCard
-                        key={d.id}
-                        department={d}
-                        onClick={() => {
-                          if (modal === "transfer" && journey)
-                            setState((s) => ({
-                              ...s,
-                              journeys: {
-                                ...s.journeys,
-                                [department.id]: {
-                                  ...s.journeys[department.id],
-                                  paused: true,
-                                },
-                              },
-                            }));
-                          enroll(d.id);
-                        }}
-                      />
-                    ))}
-                </div>
+                <Button
+                  onClick={() => {
+                    setPendingTransfer(
+                      modal === "transfer" ? department.id : null,
+                    );
+                    setQuery("");
+                    setFilter("전체");
+                    go("explore");
+                  }}
+                >
+                  대학·학과 찾아보기
+                </Button>
               </>
             )}
             {modal?.type === "saved" && (
               <>
+                {state.artworks[modal.id] && (
+                  <ArtworkPreview src={state.artworks[modal.id]} />
+                )}
                 <div className="saved-note-list">
                   {departments
                     .find((d) => d.id === modal.id)
